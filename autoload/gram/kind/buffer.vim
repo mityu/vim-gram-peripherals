@@ -25,3 +25,10 @@ function! s:_has_action_bufnr(item) abort
   endif
   return 1
 endfunction
+
+function! gram#kind#buffer#register()
+  call gram#item_action#register('buffer', {
+        \'edit': function('s:edit'),
+        \'wipeout': function('s:wipeout'),
+        \})
+endfunction
