@@ -11,6 +11,7 @@ let s:ui = {
 let s:textbox = {
       \'popupID': 0,
       \'bufnr': 0,
+      \'cursor_column': 0,
       \}
 
 function! s:ui.setup(params) abort
@@ -160,6 +161,14 @@ function! s:ui.on_items_deleted(ibegin, iend) abort
   endif
 endfunction
 
+function! s:ui.hide_cursor() abort
+  call self.textbox.hide_cursor()
+endfunction
+
+function! s:ui.show_cursor() abort
+  call self.textbox.show_cursor()
+endfunction
+
 function! s:ui.notify_error(msg) abort
   echohl Error
   echomsg a:msg
@@ -193,6 +202,8 @@ function! s:textbox.quit() abort
   let self.matchID = -1
 endfunction
 
+" Show the filter text and cursor.  If the filter text is too long, truncate
+" it and adjust cursor column.
 function! s:textbox.on_input_changed(text, column) abort
   let width = popup_getpos(self.popupID).core_width -
         \strdisplaywidth(self.prompt_text) - 1  " A room for cursor
@@ -223,6 +234,7 @@ function! s:textbox.on_input_changed(text, column) abort
   call self.move_cursor(a:column + strlen(self.prompt_text) - trimlen_bytes)
 endfunction
 
+" Hide cursor
 function! s:textbox.hide_cursor() abort
   if self.matchID != -1
     call matchdelete(self.matchID, self.popupID)
@@ -230,15 +242,21 @@ function! s:textbox.hide_cursor() abort
   endif
 endfunction
 
-function! s:textbox.move_cursor(column) abort
-  call self.hide_cursor()
+" Show cursor at self.cursor_column.
+function! s:textbox.show_cursor() abort
   hi def link gramCursor Cursor
   let self.matchID = matchaddpos(
         \'gramCursor',
-        \[[1, a:column]],
+        \[[1, self.cursor_column]],
         \10,
         \-1,
         \{'window': self.popupID})
+endfunction
+
+function! s:textbox.move_cursor(column) abort
+  let self.cursor_column = a:column
+  call self.hide_cursor()
+  call self.show_cursor()
 endfunction
 
 function! s:textbox.set_statusline(text) abort
