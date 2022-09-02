@@ -12,7 +12,9 @@ let s:textbox = {
       \'popupID': 0,
       \'bufnr': 0,
       \'cursor_column': 0,
+      \'text_display_line': 2,
       \}
+let s:info_area_height = s:textbox.text_display_line + 1
 
 function! s:ui.setup(params) abort
   highlight def link gramUIPopupSelectedItem Cursorline
@@ -34,6 +36,10 @@ function! s:ui.setup(params) abort
   endif
 
   let pline = (&lines - pheight) / 2
+  if (pline - s:info_area_height) < 0
+    let pline = s:info_area_height
+  endif
+
   let pcol = (&columns - pwidth) / 2
 
   let self.popupID = popup_create('', {
@@ -46,6 +52,7 @@ function! s:ui.setup(params) abort
         \'maxwidth': pwidth,
         \'minwidth': pwidth,
         \'highlight': 'gramUIPopupPanel',
+        \'border': [0, 1, 1, 1],
         \})
   let self.bufnr = winbufnr(self.popupID)
   let self.textbox = copy(s:textbox)
@@ -185,17 +192,19 @@ function! s:textbox.setup(params, config) abort
   let self.popupID = popup_create('', {
         \'scrollbar': 0,
         \'wrap': 0,
-        \'line': a:config.line - 1,
+        \'line': a:config.line - s:info_area_height,
         \'col': a:config.col,
         \'maxwidth': a:config.width,
         \'minwidth': a:config.width,
-        \'maxeight': 1,
-        \'minheight': 1,
+        \'maxheight': self.text_display_line,
+        \'minheight': self.text_display_line,
         \'highlight': 'gramUIPopupPanel',
+        \'border': [1, 1, 0, 1],
         \})
   let self.bufnr = winbufnr(self.popupID)
   let self.prompt_text = a:params.prompt_text
   let self.matchID = -1
+  call self.set_statusline('statusline')
 endfunction
 
 function! s:textbox.quit() abort
@@ -234,7 +243,7 @@ function! s:textbox.on_input_changed(text, column) abort
   if is_cursor_end
     let text ..= ' '
   endif
-  call setbufline(self.bufnr, 1, self.prompt_text .. text)
+  call setbufline(self.bufnr, self.text_display_line, self.prompt_text .. text)
   call self.move_cursor(a:column + strlen(self.prompt_text) - trimlen_bytes)
 endfunction
 
@@ -251,7 +260,7 @@ function! s:textbox.show_cursor() abort
   highlight def link gramUIPopupCursor Cursor
   let self.matchID = matchaddpos(
         \'gramUIPopupCursor',
-        \[[1, self.cursor_column]],
+        \[[self.text_display_line, self.cursor_column]],
         \10,
         \-1,
         \{'window': self.popupID})
@@ -264,7 +273,9 @@ function! s:textbox.move_cursor(column) abort
 endfunction
 
 function! s:textbox.set_statusline(text) abort
-  call popup_setoptions(self.popupID, {'title': a:text})
+  let pwidth = popup_getpos(self.popupID).core_width
+  let text = a:text .. repeat(' ', pwidth - strdisplaywidth(a:text))
+  call setbufline(self.bufnr, 1, text)
 endfunction
 
 
