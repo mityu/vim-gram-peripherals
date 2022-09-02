@@ -15,8 +15,10 @@ let s:textbox = {
       \}
 
 function! s:ui.setup(params) abort
+  highlight def link gramUIPopupSelectedItem Cursorline
+  highlight def link gramUIPopupPanel Normal
   call sign_define(s:sign_name, {
-        \'linehl': 'Cursorline',
+        \'linehl': 'gramUIPopupSelectedItem',
         \'text': '>',
         \})
   let self.signID = 0
@@ -43,6 +45,7 @@ function! s:ui.setup(params) abort
         \'minheight': pheight,
         \'maxwidth': pwidth,
         \'minwidth': pwidth,
+        \'highlight': 'gramUIPopupPanel',
         \})
   let self.bufnr = winbufnr(self.popupID)
   let self.textbox = copy(s:textbox)
@@ -188,6 +191,7 @@ function! s:textbox.setup(params, config) abort
         \'minwidth': a:config.width,
         \'maxeight': 1,
         \'minheight': 1,
+        \'highlight': 'gramUIPopupPanel',
         \})
   let self.bufnr = winbufnr(self.popupID)
   let self.prompt_text = a:params.prompt_text
@@ -244,9 +248,9 @@ endfunction
 
 " Show cursor at self.cursor_column.
 function! s:textbox.show_cursor() abort
-  hi def link gramCursor Cursor
+  highlight def link gramUIPopupCursor Cursor
   let self.matchID = matchaddpos(
-        \'gramCursor',
+        \'gramUIPopupCursor',
         \[[1, self.cursor_column]],
         \10,
         \-1,
