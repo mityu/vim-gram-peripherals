@@ -26,6 +26,13 @@ function! s:filter_func(comparers, v) abort
       return 0
     endif
     call add(a:v.matchpos, [m[1], m[2] - m[1]])
+    while 1
+      let m = matchstrpos(a:v.word, c, m[2])
+      if m == ['', -1, -1]
+        break
+      endif
+      call add(a:v.matchpos, [m[1], m[2] - m[1]])
+    endwhile
   endfor
   return 1
 endfunction
