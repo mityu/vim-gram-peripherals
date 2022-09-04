@@ -206,8 +206,6 @@ endfunction
 
 
 function! s:textbox.setup(params, config) abort
-  " TODO: Show border?
-  " TODO: Modify 'line' value with border height consideration
   let self.popupID = popup_create('', {
         \'scrollbar': 0,
         \'wrap': 0,
