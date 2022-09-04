@@ -63,9 +63,15 @@ function! s:ui.setup(params) abort
         \'width': pwidth,
         \})
   call setwinvar(self.popupID, '&signcolumn', 'yes')
+  " TODO: Make it available to specify highlight group
+  call prop_type_add('gramUIPopupPropMatchpos', #{
+        \bufnr: self.bufnr,
+        \highlight: 'Special',
+        \})
 endfunction
 
 function! s:ui.quit() abort
+  call prop_type_delete('gramUIPopupPropMatchpos', #{bufnr: self.bufnr})
   call self.textbox.quit()
   call popup_close(self.popupID)
   let self.popupID = 0
@@ -141,11 +147,24 @@ function! s:ui.on_items_added(idx, items) abort
     endtry
   endif
   " TODO: More good expression?
+  let had_no_items = 0
   if line('$', self.popupID) == 1 && getbufline(self.bufnr, 1) == ['']
-    call setbufline(self.bufnr, 1, a:items)
-  else
-    call appendbufline(self.bufnr, a:idx, a:items)
+    let had_no_items = 1
   endif
+
+  let idx = a:idx
+  for item in a:items
+    call appendbufline(self.bufnr, idx, item.word)
+    " NOTE: Matchpos are expressed in 0-indexed byte-index.
+    for m in get(item, 'matchpos', [])
+      call prop_add(idx + 1, m[0] + 1, #{
+            \length: m[1],
+            \bufnr: self.bufnr,
+            \type: 'gramUIPopupPropMatchpos'
+            \})
+    endfor
+  endfor
+
   if linenr != 0
     call self.on_selected_item_changed(linenr - 1)
   endif

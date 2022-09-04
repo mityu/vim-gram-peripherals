@@ -19,10 +19,13 @@ function! s:split_input(input) abort
 endfunction
 
 function! s:filter_func(comparers, v) abort
+  let a:v.matchpos = []
   for c in a:comparers
-    if a:v.word !~? c
+    let m = matchstrpos(a:v.word, c)
+    if m == ['', -1, -1]
       return 0
     endif
+    call add(a:v.matchpos, [m[1], m[2] - m[1]])
   endfor
   return 1
 endfunction
