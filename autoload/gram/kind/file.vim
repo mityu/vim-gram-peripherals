@@ -3,7 +3,7 @@ scriptversion 4
 function! s:edit(items) abort
   for item in a:items
     let path = get(item, 'action_path', 'word')
-    edit `=path`
+    execute 'edit' fnameescape(path)
   endfor
 endfunction
 
