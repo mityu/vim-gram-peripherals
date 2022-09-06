@@ -163,7 +163,12 @@ function! s:ui.on_items_added(idx, items) abort
             \type: 'gramUIPopupPropMatchpos'
             \})
     endfor
+    let idx += 1
   endfor
+
+  if had_no_items
+    silent! call deletebufline(self.bufnr, '$')
+  endif
 
   if linenr != 0
     call self.on_selected_item_changed(linenr - 1)
