@@ -46,7 +46,6 @@ function! s:find_git_root() abort
   let cwd = getcwd(winnr())
   if expand('%') !=# ''
     let cwd = resolve(expand('%:p:h'))
-    echom 'curfile'
   endif
   let dotgit = finddir('.git', cwd .. ';')
   if dotgit ==# ''
