@@ -36,8 +36,8 @@ function! s:ui.setup(params) abort
   endif
 
   let pline = (&lines - pheight) / 2
-  if (pline - s:info_area_height) < 0
-    let pline = s:info_area_height
+  if (pline - s:info_area_height) < 1
+    let pline = s:info_area_height + 1
   endif
 
   let pcol = (&columns - pwidth) / 2
