@@ -32,6 +32,7 @@ function! s:out_cb(Callback, session_id, cwd, _, msg) abort
 endfunction
 
 function! s:kill() abort
+  let s:session_id += 1
   if s:job_id != v:null && job_status(s:job_id) ==# 'run'
     call job_stop(s:job_id)
     sleep 5m
@@ -39,7 +40,6 @@ function! s:kill() abort
       call job_stop(s:job_id, 'kill')
     endif
   endif
-  let s:session_id += 1
 endfunction
 
 function! s:find_git_root() abort
