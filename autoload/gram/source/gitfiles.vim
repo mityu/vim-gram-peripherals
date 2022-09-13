@@ -25,6 +25,10 @@ function! s:source.quit() abort
   call s:kill()
 endfunction
 
+function! s:source.on_request_preview(Previewer, item) abort
+  call a:Previewer.file(a:item.action_path)
+endfunction
+
 function! s:out_cb(Callback, session_id, cwd, _, msg) abort
   if s:session_id == a:session_id
     call call(a:Callback, [[{'word': a:msg, 'action_path': a:cwd .. a:msg}]])

@@ -1,5 +1,7 @@
 scriptversion 4
 
+" TODO: Do not make preview window if preview-method is 'none'
+
 let s:sign_name = 'gram-cursorline'
 let s:sign_group = 'PopUpGramCursorline'
 let s:ui = {
@@ -14,9 +16,15 @@ let s:textbox = {
       \'cursor_column': 0,
       \'text_display_line': 2,
       \}
+let s:previewbox = {
+      \'popupID': 0,
+      \'bufnr': 0,
+      \'popup_options': {},
+      \}
 let s:info_area_height = s:textbox.text_display_line + 1
 
 function! s:ui.setup(params) abort
+  " TODO: Make it available to specify preview enabled/disabled layout.
   highlight def link gramUIPopupSelectedItem Cursorline
   highlight def link gramUIPopupPanel Normal
   call sign_define(s:sign_name, {
@@ -30,7 +38,7 @@ function! s:ui.setup(params) abort
     let pheight = min([&lines - 6, 35])
   endif
 
-  let pwidth = &columns / 2
+  let pwidth = &columns / 3  " TODO: tmp
   if pwidth < 90
     let pwidth = min([&columns, 90])
   endif
@@ -41,6 +49,7 @@ function! s:ui.setup(params) abort
   endif
 
   let pcol = (&columns - pwidth) / 2
+  let pcol = pcol - pwidth / 2 - 2  " TODO: tmp.
 
   let self.popupID = popup_create('', {
         \'scrollbar': 0,
@@ -62,6 +71,13 @@ function! s:ui.setup(params) abort
         \'height': pheight,
         \'width': pwidth,
         \})
+  let self.previewbox = deepcopy(s:previewbox)
+  call self.previewbox.setup(a:params, #{
+        \line: pline,
+        \col: pcol,
+        \height: pheight,
+        \width: pwidth,
+        \})
   call setwinvar(self.popupID, '&signcolumn', 'yes')
   " TODO: Make it available to specify highlight group
   call prop_type_add('gramUIPopupPropMatchpos', #{
@@ -72,6 +88,7 @@ endfunction
 
 function! s:ui.quit() abort
   call prop_type_delete('gramUIPopupPropMatchpos', #{bufnr: self.bufnr})
+  call self.previewbox.quit()
   call self.textbox.quit()
   call popup_close(self.popupID)
   let self.popupID = 0
@@ -203,6 +220,22 @@ function! s:ui.show_cursor() abort
   call self.textbox.show_cursor()
 endfunction
 
+function! s:ui.preview_file(filename, opts) abort
+  call self.previewbox.preview_file(a:filename, a:opts)
+endfunction
+
+function! s:ui.preview_buffer(buffer, opts) abort
+  call self.previewbox.preview_buffer(a:buffer, a:opts)
+endfunction
+
+function! s:ui.preview_text(text, opts) abort
+  call self.previewbox.preview_text(a:text, a:opts)
+endfunction
+
+function! s:ui.clear_preview() abort
+  call self.previewbox.clear_preview()
+endfunction
+
 function! s:ui.notify_error(msg) abort
   echohl Error
   echomsg a:msg
@@ -300,6 +333,81 @@ function! s:textbox.set_statusline(text) abort
   call setbufline(self.bufnr, 1, text)
 endfunction
 
+
+function! s:previewbox.setup(params, config) abort
+  let self.popup_options = #{
+        \scrollbar: 0,
+        \wrap: 0,
+        \line: a:config.line - s:info_area_height,
+        \col: a:config.col + a:config.width + 2,
+        \maxwidth: a:config.width,
+        \minwidth: a:config.width,
+        \maxheight: a:config.height + s:info_area_height - 1,
+        \minheight: a:config.height + s:info_area_height - 1,
+        \highlight: 'gramUIPopupPanel',
+        \border: [1, 1, 1, 1],
+        \}
+  let self.popupID = popup_create('', self.popup_options)
+  let self.bufnr = winbufnr(self.popupID)
+endfunction
+
+function! s:previewbox.quit() abort
+  call popup_close(self.popupID)
+  let self.popupID = 0
+  let self.bufnr = 0
+endfunction
+
+function! s:previewbox.preview_file(filename, opts) abort
+  " TODO: Make it available to specify the first display line.
+  call self.quit()
+  if !filereadable(a:filename)
+    call self.preview_text(['File is not readable.'], {})
+    return
+  endif
+  let self.bufnr = bufadd('gram-popup-preview://' .. a:filename)
+  call setbufvar(self.bufnr, '&buftype', 'popup')
+  call setbufvar(self.bufnr, '&bufhidden', 'wipe')
+  call setbufvar(self.bufnr, '&swapfile', 0)
+  call setbufvar(self.bufnr, '&undofile', 0)
+  let self.popupID = popup_create(self.bufnr, self.popup_options)
+  call setwinvar(self.popupID, '&foldenable', 0)
+  call setbufline(self.bufnr, 1, readfile(a:filename))
+  call win_execute(self.popupID, 'filetype detect')
+  call self.apply_preview_options(a:opts)
+endfunction
+
+function! s:previewbox.preview_buffer(buffer, opts) abort
+  call self.quit()
+  let self.popupID = popup_create(a:buffer, self.popup_options)
+  let self.bufnr = a:bufnr
+  call self.apply_preview_options(a:opts)
+endfunction
+
+function! s:previewbox.preview_text(text, opts) abort
+  call self.quit()
+  let self.popupID = popup_create('', self.popup_options)
+  let self.bufnr = winbufnr(self.popupID)
+  call setbufline(self.bufnr, 1, a:text)
+  call self.apply_preview_options(a:opts)
+endfunction
+
+function! s:previewbox.clear_preview() abort
+  call self.preview_text([], {})
+endfunction
+
+function! s:previewbox.apply_preview_options(opts) abort
+  let firstline = 1
+  if has_key(a:opts, 'line')
+    let firstline = a:opts.line - self.popup_options.maxheight / 2
+    if firstline < 1
+      let firstline = 1
+    endif
+  elseif has_key(a:opts, 'firstline')
+    let firstline = a:opts.firstline
+  endif
+  call popup_setoptions(self.popupID, {'firstline': firstline})
+  " TODO: Apply highlight
+endfunction
 
 function! gram#ui#popup#register() abort
   call gram#ui#register('popup', s:ui)
