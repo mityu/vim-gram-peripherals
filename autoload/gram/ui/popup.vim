@@ -9,6 +9,7 @@ let s:ui = {
       \'popupID': 0,
       \'bufnr': 0,
       \'prompt_text': '',
+      \'preview_enabled': 0,
       \}
 let s:textbox = {
       \'popupID': 0,
@@ -38,18 +39,26 @@ function! s:ui.setup(params) abort
     let pheight = min([&lines - 6, 35])
   endif
 
-  let pwidth = &columns / 3  " TODO: tmp
-  if pwidth < 90
-    let pwidth = min([&columns, 90])
-  endif
-
   let pline = (&lines - pheight) / 2
   if (pline - s:info_area_height) < 1
     let pline = s:info_area_height + 1
   endif
 
-  let pcol = (&columns - pwidth) / 2
-  let pcol = pcol - pwidth / 2 - 2  " TODO: tmp.
+  let pwidth = 0
+  let pcol = 0
+  if a:params.enable_preview
+    let pwidth = &columns * 3 / 8
+    if pwidth < 90
+      let pwidth = min([&columns / 2, 90])
+    endif
+    let pcol = (&columns - pwidth * 2) / 2
+  else
+    let pwidth = &columns / 2
+    if pwidth < 90
+      let pwidth = min([&columns, 90])
+    endif
+    let pcol = (&columns - pwidth) / 2
+  endif
 
   let self.popupID = popup_create('', {
         \'scrollbar': 0,
@@ -58,8 +67,8 @@ function! s:ui.setup(params) abort
         \'col': pcol,
         \'maxheight': pheight,
         \'minheight': pheight,
-        \'maxwidth': pwidth,
-        \'minwidth': pwidth,
+        \'maxwidth': pwidth - 2,
+        \'minwidth': pwidth - 2,
         \'highlight': 'gramUIPopupPanel',
         \'border': [0, 1, 1, 1],
         \})
@@ -72,12 +81,15 @@ function! s:ui.setup(params) abort
         \'width': pwidth,
         \})
   let self.previewbox = deepcopy(s:previewbox)
-  call self.previewbox.setup(a:params, #{
-        \line: pline,
-        \col: pcol,
-        \height: pheight,
-        \width: pwidth,
-        \})
+  if a:params.enable_preview
+    let self.preview_enabled = 1
+    call self.previewbox.setup(a:params, #{
+          \line: pline,
+          \col: pcol,
+          \height: pheight,
+          \width: pwidth,
+          \})
+  endif
   call setwinvar(self.popupID, '&signcolumn', 'yes')
   " TODO: Make it available to specify highlight group
   call prop_type_add('gramUIPopupPropMatchpos', #{
@@ -221,19 +233,27 @@ function! s:ui.show_cursor() abort
 endfunction
 
 function! s:ui.preview_file(filename, opts) abort
-  call self.previewbox.preview_file(a:filename, a:opts)
+  if self.preview_enabled
+    call self.previewbox.preview_file(a:filename, a:opts)
+  endif
 endfunction
 
 function! s:ui.preview_buffer(buffer, opts) abort
-  call self.previewbox.preview_buffer(a:buffer, a:opts)
+  if self.preview_enabled
+    call self.previewbox.preview_buffer(a:buffer, a:opts)
+  endif
 endfunction
 
 function! s:ui.preview_text(text, opts) abort
-  call self.previewbox.preview_text(a:text, a:opts)
+  if self.preview_enabled
+    call self.previewbox.preview_text(a:text, a:opts)
+  endif
 endfunction
 
 function! s:ui.clear_preview() abort
-  call self.previewbox.clear_preview()
+  if self.preview_enabled
+    call self.previewbox.clear_preview()
+  endif
 endfunction
 
 function! s:ui.notify_error(msg) abort
@@ -249,8 +269,8 @@ function! s:textbox.setup(params, config) abort
         \'wrap': 0,
         \'line': a:config.line - s:info_area_height,
         \'col': a:config.col,
-        \'maxwidth': a:config.width,
-        \'minwidth': a:config.width,
+        \'maxwidth': a:config.width - 2,
+        \'minwidth': a:config.width - 2,
         \'maxheight': self.text_display_line,
         \'minheight': self.text_display_line,
         \'highlight': 'gramUIPopupPanel',
@@ -339,9 +359,9 @@ function! s:previewbox.setup(params, config) abort
         \scrollbar: 0,
         \wrap: 0,
         \line: a:config.line - s:info_area_height,
-        \col: a:config.col + a:config.width + 2,
-        \maxwidth: a:config.width,
-        \minwidth: a:config.width,
+        \col: a:config.col + a:config.width,
+        \maxwidth: a:config.width - 2,
+        \minwidth: a:config.width - 2,
         \maxheight: a:config.height + s:info_area_height - 1,
         \minheight: a:config.height + s:info_area_height - 1,
         \highlight: 'gramUIPopupPanel',
