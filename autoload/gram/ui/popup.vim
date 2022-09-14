@@ -45,19 +45,19 @@ function! s:ui.setup(params) abort
   endif
 
   let pwidth = 0
-  let pcol = 0
+  let pcol = 1
   if a:params.enable_preview
     let pwidth = &columns * 3 / 8
     if pwidth < 90
       let pwidth = min([&columns / 2, 90])
     endif
-    let pcol = (&columns - pwidth * 2) / 2
+    let pcol = (&columns - pwidth * 2) / 2 + 1
   else
     let pwidth = &columns / 2
     if pwidth < 90
       let pwidth = min([&columns, 90])
     endif
-    let pcol = (&columns - pwidth) / 2
+    let pcol = (&columns - pwidth) / 2 + 1
   endif
 
   let self.popupID = popup_create('', {
