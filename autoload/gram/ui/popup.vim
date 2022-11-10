@@ -24,6 +24,46 @@ let s:previewbox = {
       \}
 let s:info_area_height = s:textbox.text_display_line + 1
 
+"  Without Preview window:
+"
+"       (pline, pcol)
+"             |
+"             v
+"           ^ +----------------------------------+
+"           | |statusline                        |
+"           | |>> prompt                         |
+"           | |blah                              |
+"             |blah                              |
+"     pheight |blah...                           |
+"             |                                  |
+"           | |                                  |
+"           | |                                  |
+"           | |                                  |
+"           | |                                  |
+"           v +----------------------------------+
+"             <------------- pwidth ------------->
+"
+"
+"  With Preview window:
+"
+"       (pline, pcol)
+"             |
+"             v
+"           ^ +--------------------++--------------------+
+"           | |statusline          ||                    |
+"           | |>> prompt           ||                    |
+"           | |blah                ||                    |
+"             |blah                ||                    |
+"     pheight |blah...             ||   preview window   |
+"             |                    ||                    |
+"           | |                    ||                    |
+"           | |                    ||                    |
+"           | |                    ||                    |
+"           | |                    ||                    |
+"           v +--------------------++--------------------+
+"             <------ pwidth ------><------ pwidth ------>
+"
+"
 function! s:ui.setup(params) abort
   " TODO: Make it available to specify preview enabled/disabled layout.
   highlight def link gramUIPopupSelectedItem Cursorline
@@ -36,12 +76,12 @@ function! s:ui.setup(params) abort
 
   let pheight = &lines * 3 / 4
   if pheight < 35
-    let pheight = min([&lines - 6, 35])
+    let pheight = min([&lines, 35])
   endif
 
-  let pline = (&lines - pheight) / 2
-  if (pline - s:info_area_height) < 1
-    let pline = s:info_area_height + 1
+  let pline = (&lines - pheight) / 3
+  if pline == 0
+    let pline = 1
   endif
 
   let pwidth = 0
@@ -63,10 +103,10 @@ function! s:ui.setup(params) abort
   let self.popupID = popup_create('', {
         \'scrollbar': 0,
         \'wrap': 0,
-        \'line': pline,
+        \'line': pline + s:info_area_height,
         \'col': pcol,
-        \'maxheight': pheight,
-        \'minheight': pheight,
+        \'maxheight': pheight - s:info_area_height - 1,
+        \'minheight': pheight - s:info_area_height - 1,
         \'maxwidth': pwidth - 2,
         \'minwidth': pwidth - 2,
         \'highlight': 'gramUIPopupPanel',
@@ -267,7 +307,7 @@ function! s:textbox.setup(params, config) abort
   let self.popupID = popup_create('', {
         \'scrollbar': 0,
         \'wrap': 0,
-        \'line': a:config.line - s:info_area_height,
+        \'line': a:config.line,
         \'col': a:config.col,
         \'maxwidth': a:config.width - 2,
         \'minwidth': a:config.width - 2,
@@ -358,12 +398,12 @@ function! s:previewbox.setup(params, config) abort
   let self.popup_options = #{
         \scrollbar: 0,
         \wrap: 0,
-        \line: a:config.line - s:info_area_height,
+        \line: a:config.line,
         \col: a:config.col + a:config.width,
         \maxwidth: a:config.width - 2,
         \minwidth: a:config.width - 2,
-        \maxheight: a:config.height + s:info_area_height - 1,
-        \minheight: a:config.height + s:info_area_height - 1,
+        \maxheight: a:config.height - 2,
+        \minheight: a:config.height - 2,
         \highlight: 'gramUIPopupPanel',
         \border: [1, 1, 1, 1],
         \}
