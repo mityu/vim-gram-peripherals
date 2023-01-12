@@ -302,6 +302,13 @@ function! s:ui.notify_error(msg) abort
   echohl NONE
 endfunction
 
+function! s:ui.get_statusline_width() abort
+  return self.textbox.get_statusline_width()
+endfunction
+
+function! s:ui.set_statusline(text) abort
+  call self.textbox.set_statusline(a:text)
+endfunction
 
 function! s:textbox.setup(params, config) abort
   let self.popupID = popup_create('', {
@@ -391,6 +398,10 @@ function! s:textbox.set_statusline(text) abort
   let pwidth = popup_getpos(self.popupID).core_width
   let text = a:text .. repeat(' ', pwidth - strdisplaywidth(a:text))
   call setbufline(self.bufnr, 1, text)
+endfunction
+
+function! s:textbox.get_statusline_width() abort
+  return popup_getpos(self.popupID).core_width
 endfunction
 
 
