@@ -448,9 +448,10 @@ function! s:previewbox.preview_file(filename, opts) abort
 endfunction
 
 function! s:previewbox.preview_buffer(buffer, opts) abort
+  " TODO: Check if a:buffer is bufnr/Only accept bufnr
   call self.quit()
   let self.popupID = popup_create(a:buffer, self.popup_options)
-  let self.bufnr = a:bufnr
+  let self.bufnr = a:buffer
   call self.apply_preview_options(a:opts)
 endfunction
 
